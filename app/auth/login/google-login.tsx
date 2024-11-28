@@ -17,8 +17,7 @@ const GoogleLogin = () => {
 
   return (
     <Button
-      variant="outline"
-      className="w-min bg-[#1a1a1a] text-white rounded-[12px]"
+      className="w-min  bg-brand text-white rounded-[12px] hover:bg-brandSecondary"
       onClick={handleGoogleLogin}
     >
       <GoogleLogo />
