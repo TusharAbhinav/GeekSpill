@@ -1,25 +1,48 @@
 "use client";
 
+import ErrorHandler from "@/app/(home)/category/[category-name]/[company-name]/[id]/error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { Mail } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const MagicLinkLogin = () => {
+  const [error, setError] = useState<string | null>(null);
+  const [successLogin, setSuccessLogin] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const handleLogInWithEmail = async () => {
-    const supabase = createClient();
-    await supabase.auth.signInWithOtp({
-      email: handleText,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`,
-      },
-    });
+    try {
+      const supabase = createClient();
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email: handleText,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`,
+        },
+      });
+      if (error) throw new Error(error.message);
+      else if (data) setSuccessLogin(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   };
-
   const [handleText, setHandleText] = useState<string>("");
-  useEffect(() => console.log(handleText), [handleText]);
+
+  if (error) {
+    return <ErrorHandler error={error} />;
+  }
+  if (successLogin) {
+    toast({
+      title: "Magic Link has been sent to your mail",
+      description: "Please check your mail for activation link",
+      variant: "default",
+    });
+  }
 
   return (
     <section className="flex gap-4">
@@ -34,6 +57,7 @@ const MagicLinkLogin = () => {
         className="w-min  bg-brand text-white rounded-[12px] hover:bg-brandSecondary"
         onClick={handleLogInWithEmail}
         type="submit"
+        disabled={loading}
       >
         <Mail />
         Log in with Mail
