@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import FeedContent from "./feed-content";
+import FeedContent from "./extract-feed-content";
 import Loading from "./loading";
 
 type Params = {

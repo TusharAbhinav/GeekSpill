@@ -1,6 +1,6 @@
 import { AppSidebar, Items, navItems } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import  { getRSSFeedRepository } from "@/utils/supabase/rss-feeds";
+import { getRSSFeedRepository } from "@/utils/supabase/rss-feeds";
 import { RSSFeed } from "@/utils/supabase/rss-feeds";
 import ErrorHandler from "./category/[category-name]/[company-name]/[id]/error";
 
@@ -29,11 +29,11 @@ export default async function Layout({
   });
 
   return (
-    <main className="bg-brand w-max">
+    <main className="bg-brand overflow-hidden">
       <SidebarProvider>
-        <div className="flex">
+        <div className="flex w-[100%]">
           <AppSidebar navItems={items} />
-          <main className="flex-grow">
+          <main className="flex-grow w-[85%]">
             <SidebarTrigger />
             {children}
           </main>

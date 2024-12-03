@@ -10,14 +10,14 @@ const GoogleLogin = () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `http://localhost:3000/auth/callback`,
+        redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`,
       },
     });
   };
 
   return (
     <Button
-      className="w-min  bg-brand text-white rounded-[12px] hover:bg-brandSecondary"
+      className="w-[100%]  bg-brand text-white rounded-[12px] hover:bg-brandSecondary"
       onClick={handleGoogleLogin}
     >
       <GoogleLogo />
