@@ -2,9 +2,10 @@ import { RSSFeed } from "@/utils/supabase/rss-feeds";
 import { notFound } from "next/navigation";
 import ErrorHandler from "./error";
 import Parser from "rss-parser";
-import { CreatorIcon } from "@/app/public/assets/creator-icon";
 import { DateIcon } from "@/app/public/assets/date-icon";
-import { SquareArrowUpRight } from "lucide-react";
+import { SquareArrowUpRight, User } from "lucide-react";
+import GenerateSummary from "./generate-summary";
+import HandleLikesAndDislikes from "@/components/handle-likes_dislikes";
 type InitialFeedData = {
   data: RSSFeed[] | null;
   error: { details: string } | null;
@@ -20,13 +21,8 @@ async function fetchFeedContent(url: string) {
     }
     const xmlData = await response.text();
     const feed = await parser.parseString(xmlData);
-    console.log(feed);
     return feed;
   } catch (err) {
-    // const supabaseClient = await createClient();
-    // const RSSFeedObj = new RSSFeedRepository(supabaseClient);
-    // const { error } = await RSSFeedObj.deactivateFeed(id);
-    // if (error) throw new Error(error.details);
     console.error("Error fetching feed content:", err);
     throw new Error("Failed to load feed content for");
   }
@@ -91,12 +87,14 @@ export default async function DisplayFeedContent({
                 {availableProps.title && (
                   <h2 className="text-xl font-bold text-white">{item.title}</h2>
                 )}
-                <div className="flex items-center text-s text-gray-400 space-x-2">
+                <div className="flex items-center text-s text-gray-400 my-2 space-x-2">
                   {availableProps.creator && (
-                    <span className="flex items-center">
-                      <CreatorIcon />
-                      {item.creator || item?.author}
-                    </span>
+                    <div className="flex items-center gap-4">
+                      <User size="20px" />
+                      <span className="w-[100%]">
+                        {item.creator || item?.author}
+                      </span>
+                    </div>
                   )}
                   {availableProps.pubDate && (
                     <span className="flex items-center">
@@ -109,11 +107,13 @@ export default async function DisplayFeedContent({
                       href={item.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline ml-2"
+                      className="text-blue-400 hover:text-blue-500 ml-2"
                     >
                       <SquareArrowUpRight size={"20px"} />
                     </a>
                   )}
+                  <GenerateSummary url={item.link} />
+                  <HandleLikesAndDislikes url={item.link!} />
                 </div>
               </header>
               {availableProps.content && (
@@ -123,6 +123,7 @@ export default async function DisplayFeedContent({
                     prose-a:text-blue-400 
                     prose-strong:text-white
                     prose-code:text-white
+                    prose-img:w-full
                     prose-pre:bg-brandSecondary
                     "
                   dangerouslySetInnerHTML={{
