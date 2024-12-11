@@ -9,6 +9,8 @@ export interface CacheProps {
   userID: string;
   hasLiked?: boolean;
   hasDisliked?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 }
 
 const createRedisClient = () => {
@@ -47,7 +49,7 @@ export const updateCache = async ({
 export const getCache = async (key: string) => {
   try {
     const redis = createRedisClient();
-    return await redis.get(`likes:${key}`);
+    return await redis.get<CacheProps>(`likes:${key}`);
   } catch (error) {
     if (error instanceof Error) {
       console.error("Cache retrieval error:", error.message);

@@ -2,30 +2,25 @@
 
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState, useEffect, useRef } from "react";
-import {
-  updateCache,
-  getCache,
-  CacheProps,
-} from "@/app/actions/update-likes_dislikes_cache";
-import ErrorHandler from "@/app/(home)/category/[category-name]/[company-name]/[id]/error";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  CacheProps,
+  getCache,
+  updateCache,
+} from "@/app/actions/update-likes_dislikes_cache";
 
 interface LikesDislikesProps {
   url: string;
 }
 
 const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
-  const [likes, setLikes] = useState(0);
-  const [dislikes, setDislikes] = useState(0);
-  const [userAction, setUserAction] = useState<"liked" | "disliked" | null>(
-    null
-  );
-  const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data: userID, isLoading } = useQuery({
+  const { data: userID } = useQuery({
     queryKey: ["user"],
     queryFn: async () => {
       const supabase = createClient();
@@ -36,73 +31,61 @@ const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  const { data: serverData, isLoading:isLikesDislikesFetched } = useQuery({
+    queryKey: ["cache", url],
+    queryFn: async () => {
+      if (!isVisible || !userID) return null;
+      return await getCache(url);
+    },
+    enabled: isVisible && !!userID,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const updateCacheMutation = useMutation({
+    mutationFn: async (cacheData: CacheProps) => {
+      return await updateCache(cacheData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cache", url] });
+    },
+  });
+
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [userAction, setUserAction] = useState<"liked" | "disliked" | null>(
+    null
+  );
+  useEffect(() => {
+    if (serverData) {
+      setLikes(serverData.totalLikes);
+      setDislikes(serverData.totalDislikes);
+      setUserAction(() => {
+        if (userID && serverData?.[userID.id]) {
+          return serverData[userID.id].hasLiked
+            ? "liked"
+            : serverData[userID.id].hasDisliked
+            ? "disliked"
+            : null;
+        }
+        return null;
+      });
+    }
+  }, [serverData, userID]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => setIsVisible(entry.isIntersecting),
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
       { threshold: 0.1 }
     );
 
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [ref]);
+  }, [url]);
 
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        const localData = JSON.parse(localStorage.getItem(url) || "null");
-
-        if (localData) {
-          setLikes(localData.totalLikes || 0);
-          setDislikes(localData.totalDislikes || 0);
-          setUserAction(localData.userAction || null);
-
-          if (localData.unsynced && userID) {
-            await updateCache({
-              totalLikes: localData.totalLikes,
-              totalDislikes: localData.totalDislikes,
-              url: url,
-              userID: userID.id,
-              hasLiked: localData.userAction === "liked",
-              hasDisliked: localData.userAction === "disliked",
-            });
-            localData.unsynced = false;
-            localStorage.setItem(url, JSON.stringify(localData));
-          }
-        } else if (isVisible && userID) {
-          const serverData = (await getCache(url)) as CacheProps;
-          if (serverData) {
-            setLikes(serverData.totalLikes || 0);
-            setDislikes(serverData.totalDislikes || 0);
-
-            const userData = serverData[userID.id ] ;
-            if (userData?.hasLiked) setUserAction("liked");
-            if (userData?.hasDisliked) setUserAction("disliked");
-
-            localStorage.setItem(
-              url,
-              JSON.stringify({
-                totalLikes: serverData.totalLikes,
-                totalDislikes: serverData.totalDislikes,
-                userAction: userData?.hasLiked
-                  ? "liked"
-                  : userData?.hasDisliked
-                  ? "disliked"
-                  : null,
-                unsynced: false,
-              })
-            );
-          }
-        }
-      } catch (error) {
-        if (error instanceof Error)
-          return <ErrorHandler error={error.message} />;
-      }
-    };
-
-    if (isVisible) initializeData();
-  }, [url, userID, isVisible]);
-
-  const handleLike = async () => {
+  const handleLike = () => {
     if (userAction !== "liked" && userID) {
       const newLikes = likes + 1;
       const newDislikes = userAction === "disliked" ? dislikes - 1 : dislikes;
@@ -110,92 +93,48 @@ const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
       setDislikes(newDislikes);
       setUserAction("liked");
 
-      localStorage.setItem(
-        url,
-        JSON.stringify({
-          totalLikes: newLikes,
-          totalDislikes: newDislikes,
-          userAction: "liked",
-          unsynced: true,
-        })
-      );
-
-      try {
-        await updateCache({
-          totalLikes: newLikes,
-          totalDislikes: newDislikes,
-          url: url,
-          userID: userID.id,
-          hasLiked: true,
-          hasDisliked: false,
-        });
-
-        localStorage.setItem(
-          url,
-          JSON.stringify({
-            totalLikes: newLikes,
-            totalDislikes: newDislikes,
-            userAction: "liked",
-            unsynced: false,
-          })
-        );
-      } catch (error) {
-        if (error instanceof Error)
-          return <ErrorHandler error={error.message} />;
-      }
+      updateCacheMutation.mutate({
+        totalLikes: newLikes,
+        totalDislikes: newDislikes,
+        url: url,
+        userID: userID.id,
+        hasLiked: true,
+        hasDisliked: false,
+      });
     }
   };
 
-  const handleDislike = async () => {
+  const handleDislike = () => {
     if (userAction !== "disliked" && userID) {
       const newDislikes = dislikes + 1;
       const newLikes = userAction === "liked" ? likes - 1 : likes;
+
       setLikes(newLikes);
       setDislikes(newDislikes);
       setUserAction("disliked");
 
-      localStorage.setItem(
-        url,
-        JSON.stringify({
-          totalLikes: newLikes,
-          totalDislikes: newDislikes,
-          userAction: "disliked",
-          unsynced: true,
-        })
-      );
-
-      try {
-        await updateCache({
-          totalLikes: newLikes,
-          totalDislikes: newDislikes,
-          url: url,
-          userID: userID.id,
-          hasLiked: false,
-          hasDisliked: true,
-        });
-
-        localStorage.setItem(
-          url,
-          JSON.stringify({
-            totalLikes: newLikes,
-            totalDislikes: newDislikes,
-            userAction: "disliked",
-            unsynced: false,
-          })
-        );
-      } catch (error) {
-        if (error instanceof Error)
-          return <ErrorHandler error={error.message} />;
-      }
+      updateCacheMutation.mutate({
+        totalLikes: newLikes,
+        totalDislikes: newDislikes,
+        url: url,
+        userID: userID.id,
+        hasLiked: false,
+        hasDisliked: true,
+      });
     }
   };
+
+  const isButtonDisabled = useMemo(() => {
+    return !userID || isLikesDislikesFetched;
+  }, [userID, isLikesDislikesFetched]);
+
   return (
     <div ref={ref} className="flex gap-4 items-center">
       <Button
         variant="ghost"
         className="flex items-center gap-2 hover:bg-brandSecondary"
         onClick={handleLike}
-        disabled={isLoading}
+        disabled={isButtonDisabled}
       >
         <ThumbsUp
           color={userAction === "liked" ? "#10B981" : "#9CA3AF"}
@@ -207,7 +146,7 @@ const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
         variant="ghost"
         className="flex items-center gap-2 hover:bg-brandSecondary"
         onClick={handleDislike}
-        disabled={isLoading}
+        disabled={isButtonDisabled}
       >
         <ThumbsDown
           color={userAction === "disliked" ? "#EF4444" : "#9CA3AF"}
