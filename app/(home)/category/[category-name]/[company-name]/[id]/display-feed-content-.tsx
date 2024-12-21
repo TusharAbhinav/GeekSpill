@@ -2,19 +2,19 @@ import { RSSFeed } from "@/utils/supabase/rss-feeds";
 import { notFound } from "next/navigation";
 import ErrorHandler from "./error";
 import Parser from "rss-parser";
-import { DateIcon } from "@/app/public/assets/date-icon";
-import { SquareArrowUpRight, User } from "lucide-react";
-import GenerateSummary from "./generate-summary";
-import HandleLikesAndDislikes from "@/components/handle-likes_dislikes";
+import FeedMetadata from "@/components/display-feed-metadata";
+
 type InitialFeedData = {
   data: RSSFeed[] | null;
   error: { details: string } | null;
 };
+
 const parser = new Parser();
+
 async function fetchFeedContent(url: string) {
   try {
     const response = await fetch(url, {
-      next: { revalidate: 300 },
+      cache: 'no-cache',
     });
     if (!response.ok) {
       throw new Error(`Failed to fetch feed: ${response.statusText}`);
@@ -27,6 +27,7 @@ async function fetchFeedContent(url: string) {
     throw new Error("Failed to load feed content for");
   }
 }
+
 
 export default async function DisplayFeedContent({
   initialFeedData,
@@ -62,59 +63,54 @@ export default async function DisplayFeedContent({
   }
 
   return (
-    <div className="p-4 text-foreground w-[100%]">
-      <h1 className="text-xxl font-bold mb-4 text-white">{feed.name}</h1>
-      <div className="space-y-6 w-[100%]">
+    <div className="p-2 sm:p-4 text-foreground w-full">
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-4 text-white">
+        {feed.name}
+      </h1>
+      <div className="space-y-4 sm:space-y-6 w-full">
         {feedContent.items.map((item, index) => {
           const availableProps = {
-            title: (item?.title && Object.getPrototypeOf(item.title)) ?? null,
+            title:
+              item?.title && Object.getPrototypeOf(item.title)
+                ? item.title
+                : null,
             creator:
-              (item?.creator && Object.getPrototypeOf(item.creator)) ??
-              (item?.author && Object.getPrototypeOf(item.author)) ??
-              null,
+              item?.creator && Object.getPrototypeOf(item.creator)
+                ? item.creator
+                : item?.author && Object.getPrototypeOf(item.author)
+                ? item.author
+                : null,
             pubDate:
-              (item?.pubDate && Object.getPrototypeOf(item.pubDate)) ?? null,
-            link: (item?.link && Object.getPrototypeOf(item.link)) ?? null,
+              item?.pubDate && Object.getPrototypeOf(item.pubDate)
+                ? item.pubDate
+                : null,
+            link:
+              item?.link && Object.getPrototypeOf(item.link) ? item.link : null,
             content:
-              (item?.content && Object.getPrototypeOf(item.content)) ??
-              (item?.contentSnippet &&
-                Object.getPrototypeOf(item.contentSnippet)) ??
-              null,
+              item?.content && Object.getPrototypeOf(item.content)
+                ? item.content
+                : item?.contentSnippet &&
+                  Object.getPrototypeOf(item.contentSnippet)
+                ? item.contentSnippet
+                : null,
           };
           return (
-            <article key={index} className="bg-brand p-4 rounded-lg shadow-md">
-              <header className="mb-4 border-b border-gray-700 pb-2">
+            <article
+              key={index}
+              className="bg-brand p-2 sm:p-4 rounded-lg shadow-md"
+            >
+              <header className="mb-2 sm:mb-4 border-b border-gray-700 pb-2">
                 {availableProps.title && (
-                  <h2 className="text-xl font-bold text-white">{item.title}</h2>
+                  <h2 className="text-lg sm:text-xl font-bold text-white">
+                    {item.title}
+                  </h2>
                 )}
-                <div className="flex items-center text-s text-gray-400 my-2 space-x-2">
-                  {availableProps.creator && (
-                    <div className="flex items-center gap-4">
-                      <User size="20px" />
-                      <span className="w-[100%]">
-                        {item.creator || item?.author}
-                      </span>
-                    </div>
-                  )}
-                  {availableProps.pubDate && (
-                    <span className="flex items-center">
-                      <DateIcon />
-                      {new Date(item.pubDate!).toLocaleDateString()}
-                    </span>
-                  )}
-                  {availableProps.link && (
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-500 ml-2"
-                    >
-                      <SquareArrowUpRight size={"20px"} />
-                    </a>
-                  )}
-                  <GenerateSummary url={item.link} />
-                  <HandleLikesAndDislikes url={item.link!} />
-                </div>
+                <FeedMetadata
+                  creator={availableProps.creator!}
+                  link={availableProps.link!}
+                  pubDate={availableProps.pubDate!}
+                  title={availableProps.title!}
+                />
               </header>
               {availableProps.content && (
                 <div
@@ -125,6 +121,7 @@ export default async function DisplayFeedContent({
                     prose-code:text-white
                     prose-img:w-full
                     prose-pre:bg-brandSecondary
+                    prose-sm sm:prose-base
                     "
                   dangerouslySetInnerHTML={{
                     __html: item.content! || item.contentSnippet!,

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.1",
-    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.3",
     "@radix-ui/react-popover": "^1.1.2",
     "@radix-ui/react-scroll-area": "^1.2.1",
     "@radix-ui/react-separator": "^1.1.0",
@@ -28,17 +28,20 @@
     "lucide-react": "^0.460.0",
     "markdown-to-jsx": "^7.7.0",
     "next": "14.2.18",
+    "nprogress": "^0.2.0",
     "openai": "^4.76.0",
     "react": "^18",
     "react-dom": "^18",
     "react-type-animation": "^3.2.0",
     "rss-parser": "^3.13.0",
     "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^20",
+    "@types/nprogress": "^0.2.3",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
