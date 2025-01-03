@@ -97,7 +97,7 @@ export default async function DisplayFeedContent({
           return (
             <article
               key={index}
-              className="bg-brand p-2 sm:p-4 rounded-lg shadow-md"
+              className="bg-brand p-2 sm:p-4 rounded-lg shadow-md flex flex-col"
             >
               <header className="mb-2 sm:mb-4 border-b border-gray-700 pb-2">
                 {availableProps.title && (

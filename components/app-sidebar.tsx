@@ -1,4 +1,5 @@
 "use client";
+
 import * as React from "react";
 import { ChevronRight } from "lucide-react";
 import {
@@ -19,7 +20,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { ScrollArea } from "./ui/scroll-area";
 import { useEffect, useState } from "react";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
@@ -31,10 +31,12 @@ export interface Items {
   id: string;
   isActive?: boolean;
 }
+
 export interface navItems {
   title: string;
   items: Items[];
 }
+
 export function AppSidebar({
   navItems,
   ...props
@@ -42,31 +44,35 @@ export function AppSidebar({
   const [linkClicked, setLinkClicked] = useState<boolean>(false);
   const [pageID, setPageID] = useState<string>("");
   const pathName = usePathname();
+
   useEffect(() => {
-      NProgress.configure({ showSpinner: false });
+    NProgress.configure({ showSpinner: false });
   }, []);
 
   useEffect(() => {
-    if (!linkClicked) {
+    if (!pathName.startsWith("/auth")) {
+      if (linkClicked) {
+        NProgress.start();
+      } else {
+        NProgress.done();
+      }
+    } else {
       NProgress.done();
     }
-    return () => {
-      NProgress.start();
-    };
-  }, [linkClicked]);
+  }, [linkClicked, pathName]);
+
   useEffect(() => {
     setLinkClicked(false);
     setPageID(pathName.split("/")[4]);
   }, [pathName]);
+
   return (
-    <Sidebar {...props}>
-      <ScrollArea className="w-[100%] h-min">
+      <Sidebar {...props}>
         <SidebarHeader></SidebarHeader>
         <SidebarContent className="gap-0">
           {navItems.map((item) => (
             <Collapsible
               key={item.title}
-              title={item.title}
               defaultOpen
               className="group/collapsible"
             >
@@ -85,7 +91,10 @@ export function AppSidebar({
                     <SidebarMenu>
                       {item.items.map((subItem) => (
                         <SidebarMenuItem key={subItem.title}>
-                          <SidebarMenuButton asChild isActive={false}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={pageID === subItem.id}
+                          >
                             <Link
                               href={`/category/${item.title}/${subItem.title}/${subItem.id}`}
                               onClick={() =>
@@ -105,7 +114,6 @@ export function AppSidebar({
           ))}
         </SidebarContent>
         <SidebarRail />
-      </ScrollArea>
-    </Sidebar>
+      </Sidebar>
   );
 }

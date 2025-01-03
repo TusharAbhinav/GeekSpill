@@ -11,6 +11,12 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { DateIcon } from "@/app/public/assets/date-icon";
 import { SquareArrowUpRight, User, Info } from "lucide-react";
 import HandleLikesAndDislikes from "@/components/handle-likes_dislikes";
@@ -33,55 +39,96 @@ export default function FeedMetadata({
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-
     handleResize();
-
     window.addEventListener("resize", handleResize);
-
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   if (!isMobile) {
     return (
-      <div className="flex items-center text-s text-gray-400 my-2 space-x-2">
-        {creator && (
-          <div className="flex items-center gap-4">
-            <User size="20px" />
-            <span className="w-[100%]">{creator}</span>
-          </div>
-        )}
-        {pubDate && (
-          <span className="flex items-center">
-            <DateIcon />
-            {new Date(pubDate).toLocaleDateString()}
-          </span>
-        )}
-        {link && (
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-500 ml-2"
-          >
-            <SquareArrowUpRight size={"20px"} />
-          </a>
-        )}
-        <GenerateSummary url={link!} />
-        <HandleLikesAndDislikes url={link!} />
-      </div>
+      <TooltipProvider>
+        <div className="flex items-center text-s text-gray-400 my-2 space-x-2">
+          {creator && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-4">
+                  <User size="20px" />
+                  <span className="w-[100%]">{creator}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Article Author</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {pubDate && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex items-center">
+                  <DateIcon />
+                  {new Date(pubDate).toLocaleDateString()}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Publication Date</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {link && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-500 ml-2"
+                >
+                  <SquareArrowUpRight size={"20px"} />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Open Original Article</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-500 ml-2"
+              >
+                <GenerateSummary url={link!} />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>Generate Summary</TooltipContent>
+          </Tooltip>
+          <HandleLikesAndDislikes url={link!} />
+        </div>
+      </TooltipProvider>
     );
   }
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
-        <button
-          className="flex items-center text-gray-400 hover:text-white transition-colors py-3"
-          onClick={() => setIsOpen(true)}
-        >
-          <Info size="20px" className="mr-2" />
-          Article Details
-        </button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                className="flex items-center text-gray-400 hover:text-white transition-colors py-3"
+                onClick={() => setIsOpen(true)}
+              >
+                <Info size="20px" className="mr-2" />
+                Article Details
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>View Article Information</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </DrawerTrigger>
       <DrawerContent className="bg-brand border-0 text-gray-400">
         <DrawerHeader>
@@ -122,7 +169,12 @@ export default function FeedMetadata({
         </div>
         <DrawerFooter>
           <DrawerClose asChild>
-            <Button variant="ghost" className="bg-brandSecondary rounded-md hover:bg-brand">Close</Button>
+            <Button
+              variant="ghost"
+              className="bg-brandSecondary rounded-md hover:bg-brand"
+            >
+              Close
+            </Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
