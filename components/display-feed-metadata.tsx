@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import dayjs from "dayjs";
+import advancedFormat from "dayjs/plugin/advancedFormat";
 import {
   Drawer,
   DrawerClose,
@@ -11,6 +13,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { Bookmark } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -21,21 +24,76 @@ import { DateIcon } from "@/app/public/assets/date-icon";
 import { SquareArrowUpRight, User, Info } from "lucide-react";
 import HandleLikesAndDislikes from "@/components/handle-likes_dislikes";
 import GenerateSummary from "@/app/(home)/category/[category-name]/[company-name]/[id]/generate-summary";
+import { getSavedArticlesRepository } from "@/utils/supabase/saved-articles";
+import ErrorHandler from "@/app/(home)/category/[category-name]/[company-name]/[id]/error";
+import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { createClient } from "@/utils/supabase/client";
+
+dayjs.extend(advancedFormat);
 
 interface FeedMetadataProps {
   title: string;
   creator: string;
   pubDate: string;
   link: string;
+  content: string;
 }
 
 export default function FeedMetadata({
   creator,
   pubDate,
   link,
+  content,
+  title,
 }: FeedMetadataProps) {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const handleSaveArticle = async () => {
+    try {
+      setIsSaving(true);
+      const savedArticleRepo = getSavedArticlesRepository();
+
+      const { exists, error: checkError } =
+        await savedArticleRepo.isArticleSaved(link);
+
+      if (checkError) {
+        throw new Error(checkError.message);
+      }
+
+      if (exists) {
+        return <ErrorHandler error="article already saved" />;
+      }
+
+      const { error } = await savedArticleRepo.addSavedArticle({
+        article_title: title,
+        article_link: link,
+        article_content: content,
+        article_creator: creator,
+        publication_date: new Date(pubDate),
+        user_id: userID!.id!,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return toast({
+        title: "Article saved successfully",
+        variant: "default",
+      });
+    } catch (err) {
+      if (err instanceof Error) return <ErrorHandler error={err.message} />;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const formatDate = (date: string) => {
+    return dayjs(date).format("Do MMMM, YYYY");
+  };
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -43,6 +101,18 @@ export default function FeedMetadata({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const { data: userID } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+      return data.user;
+    },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 
   if (!isMobile) {
     return (
@@ -66,7 +136,7 @@ export default function FeedMetadata({
               <TooltipTrigger asChild>
                 <span className="flex items-center">
                   <DateIcon />
-                  {new Date(pubDate).toLocaleDateString()}
+                  {formatDate(pubDate)}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -93,18 +163,26 @@ export default function FeedMetadata({
           )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <a
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-500 ml-2"
-              >
+              <div>
                 <GenerateSummary url={link!} />
-              </a>
+              </div>
             </TooltipTrigger>
             <TooltipContent>Generate Summary</TooltipContent>
           </Tooltip>
           <HandleLikesAndDislikes url={link!} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="default"
+                className="bg-brand shadow-none w-[20px] hover:bg-brandSecondary"
+                disabled={isSaving || !userID}
+                onClick={handleSaveArticle}
+              >
+                <Bookmark color="#9CA3AF" size={"20px"} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Bookmark Article</TooltipContent>
+          </Tooltip>
         </div>
       </TooltipProvider>
     );
@@ -144,9 +222,7 @@ export default function FeedMetadata({
           {pubDate && (
             <div className="flex items-center gap-4">
               <DateIcon />
-              <span className="px-3">
-                {new Date(pubDate).toLocaleDateString()}
-              </span>
+              <span className="px-3">{formatDate(pubDate)}</span>
             </div>
           )}
           {link && (

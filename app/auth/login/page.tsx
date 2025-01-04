@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { svgBackground } from "@/app/public/assets/pattern-randomized";
-import TypeAnimationComponent from "@/components/type-animation";
 import GoogleLogin from "./google-login";
 import {
   Card,
@@ -26,7 +25,7 @@ const LoginScreen = () => {
       cardsRef.current.children,
       {
         opacity: 1,
-        y: 50,
+        y: 0,
         duration: 0.8,
         stagger: 0.2,
         ease: "back.out(1.7)",
@@ -98,20 +97,15 @@ const LoginScreen = () => {
               GeekSpill
             </h1>
 
-            <p className="text-lg md:text-xl text-zinc-300 max-w-2xl mx-auto mb-6 font-medium">
-              Elevate Your Tech Knowledge: Curated Insights, Cutting-Edge
-              Trends, and Industry Breakthroughs at Your Fingertips
+            <p className="text-lg md:text-lg text-zinc-300 max-w-2xl mx-auto mb-6 font-medium">
+            Your one-stop destination for the latest updates, insights, and breakthroughs from the tech industry.
             </p>
-
-            <div className="text-base md:text-lg text-zinc-400 h-10 max-w-2xl mx-auto">
-              <TypeAnimationComponent />
-            </div>
           </div>
         </div>
 
         <div
           ref={cardsRef}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-11 lg:mb-8 md:mb-10 w-full max-w-6xl"
+          className="grid  grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-11 lg:mb-8 md:mb-10 w-full max-w-6xl"
         >
           {[
             {

@@ -110,6 +110,7 @@ export default async function DisplayFeedContent({
                   link={availableProps.link!}
                   pubDate={availableProps.pubDate!}
                   title={availableProps.title!}
+                  content={availableProps.content!}
                 />
               </header>
               {availableProps.content && (
