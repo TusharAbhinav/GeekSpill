@@ -1,3 +1,4 @@
+//TODO Fix the code currently single user is able to add a multiple likes
 "use client";
 
 import { ThumbsUp, ThumbsDown } from "lucide-react";

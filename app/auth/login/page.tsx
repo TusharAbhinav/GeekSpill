@@ -16,63 +16,108 @@ import MagicLinkLogin from "./magic-link";
 import gsap from "gsap";
 
 const LoginScreen = () => {
-  const cardsRef = useRef(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const tl = gsap.timeline();
+    const initAnimations = () => {
+      if (!cardsRef.current) return;
 
-    tl.from(
-      cardsRef.current.children,
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        stagger: 0.2,
-        ease: "back.out(1.7)",
-      },
-      "-=0.5"
-    );
+      const tl = gsap.timeline();
 
-    const cards = Array.from(cardsRef.current.children);
+      tl.from(
+        cardsRef.current.children,
+        {
+          opacity: 0, 
+          y: 50,     
+          duration: 0.8,
+          stagger: 0.2,
+          ease: "back.out(1.7)",
+        }
+      );
 
-    const cardAnimations = cards.map((card) => {
-      const enterAnimation = gsap.to(card, {
-        scale: 1.03,
-        duration: 0.3,
-        ease: "power2.out",
-        paused: true,
+      const cards = Array.from(cardsRef.current.children) as HTMLElement[];
+
+      const cardAnimations = cards.map((card) => {
+        const enterAnimation = gsap.to(card, {
+          scale: 1.03,
+          duration: 0.3,
+          ease: "power2.out",
+          paused: true,
+        });
+
+        const leaveAnimation = gsap.to(card, {
+          scale: 1,
+          duration: 0.3,
+          ease: "power2.out",
+          paused: true,
+        });
+
+        const handleEnter = () => enterAnimation.play();
+        const handleLeave = () => leaveAnimation.play();
+
+        card.addEventListener("mouseenter", handleEnter);
+        card.addEventListener("mouseleave", handleLeave);
+
+        return { enterAnimation, leaveAnimation, element: card, handlers: { handleEnter, handleLeave } };
       });
 
-      const leaveAnimation = gsap.to(card, {
-        scale: 1,
-        duration: 0.3,
-        ease: "power2.out",
-        paused: true,
-      });
+      const badge = document.querySelector(".floating-badge") as HTMLElement;
+      if (badge) {
+        const badgeAnimation = gsap.to(badge, {
+          y: "-8px",
+          duration: 1.5,
+          repeat: -1,
+          yoyo: true,
+          ease: "power1.inOut",
+          delay: 0.5,
+        });
 
-      card.addEventListener("mouseenter", () => enterAnimation.play());
-      card.addEventListener("mouseleave", () => leaveAnimation.play());
-
-      return { enterAnimation, leaveAnimation, element: card };
-    });
-
-    const badgeAnimation = gsap.to(".floating-badge", {
-      y: "-8px",
-      duration: 1.5,
-      repeat: -1,
-      yoyo: true,
-      ease: "power1.inOut",
-    });
-
-    return () => {
-      cardAnimations.forEach(({ enterAnimation, leaveAnimation, element }) => {
-        enterAnimation.kill();
-        leaveAnimation.kill();
-        element.replaceWith(element.cloneNode(true));
-      });
-      badgeAnimation.kill();
+        return () => {
+          cardAnimations.forEach(({ enterAnimation, leaveAnimation, element, handlers }) => {
+            enterAnimation.kill();
+            leaveAnimation.kill();
+            element.removeEventListener("mouseenter", handlers.handleEnter);
+            element.removeEventListener("mouseleave", handlers.handleLeave);
+          });
+          badgeAnimation.kill();
+        };
+      }
     };
+
+    const timeoutId = setTimeout(initAnimations, 100);
+    return () => clearTimeout(timeoutId);
   }, []);
+
+  const cards = [
+    {
+      icon: <Sparkles className="w-6 h-6 text-purple-400" />,
+      title: "Diverse Content",
+      description: "Explore a wide range of tech topics.",
+      content: "From AI and System Design to Engineering and beyond.",
+      gradient: "from-purple-500/20 to-transparent",
+    },
+    {
+      icon: <FileText className="w-6 h-6 text-blue-400" />,
+      title: "Summarized Insights",
+      description: "Get key points quickly and efficiently.",
+      content: "Concise summaries of complex tech articles and trends.",
+      gradient: "from-blue-500/20 to-transparent",
+    },
+    {
+      icon: <Zap className="w-6 h-6 text-yellow-400" />,
+      title: "Personalized Content",
+      description: "Content tailored to your specific interests.",
+      content: "Discover articles curated just for you.",
+      gradient: "from-yellow-500/20 to-transparent",
+    },
+    {
+      icon: <ThumbsUp className="w-6 h-6 text-green-400" />,
+      title: "Community-Driven",
+      description: "Engage with fellow tech enthusiasts.",
+      content: "Vote on articles and shape the platform's content.",
+      gradient: "from-green-500/20 to-transparent",
+    },
+  ];
 
   return (
     <div
@@ -98,48 +143,19 @@ const LoginScreen = () => {
             </h1>
 
             <p className="text-lg md:text-lg text-zinc-300 max-w-2xl mx-auto mb-6 font-medium">
-            Your one-stop destination for the latest updates, insights, and breakthroughs from the tech industry.
+              Your one-stop destination for the latest updates, insights, and breakthroughs from the tech industry.
             </p>
           </div>
         </div>
 
         <div
           ref={cardsRef}
-          className="grid  grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-11 lg:mb-8 md:mb-10 w-full max-w-6xl"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-11 lg:mb-8 md:mb-10 w-full max-w-6xl"
         >
-          {[
-            {
-              icon: <Sparkles className="w-6 h-6 text-purple-400" />,
-              title: "Diverse Content",
-              description: "Explore a wide range of tech topics.",
-              content: "From AI and System Design to Engineering and beyond.",
-              gradient: "from-purple-500/20 to-transparent",
-            },
-            {
-              icon: <FileText className="w-6 h-6 text-blue-400" />,
-              title: "Summarized Insights",
-              description: "Get key points quickly and efficiently.",
-              content: "Concise summaries of complex tech articles and trends.",
-              gradient: "from-blue-500/20 to-transparent",
-            },
-            {
-              icon: <Zap className="w-6 h-6 text-yellow-400" />,
-              title: "Personalized Content",
-              description: "Content tailored to your specific interests.",
-              content: "Discover articles curated just for you.",
-              gradient: "from-yellow-500/20 to-transparent",
-            },
-            {
-              icon: <ThumbsUp className="w-6 h-6 text-green-400" />,
-              title: "Community-Driven",
-              description: "Engage with fellow tech enthusiasts.",
-              content: "Vote on articles and shape the platform's content.",
-              gradient: "from-green-500/20 to-transparent",
-            },
-          ].map((card, index) => (
+          {cards.map((card, index) => (
             <Card
               key={index}
-              className="bg-[#2b2b2b]  backdrop-blur-lg border-white/10 relative overflow-hidden group"
+              className="bg-[#2b2b2b] backdrop-blur-lg border-white/10 relative overflow-hidden group"
             >
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
@@ -170,4 +186,3 @@ const LoginScreen = () => {
 };
 
 export default LoginScreen;
-

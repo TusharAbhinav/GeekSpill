@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import {
@@ -25,9 +25,8 @@ import { SquareArrowUpRight, User, Info } from "lucide-react";
 import HandleLikesAndDislikes from "@/components/handle-likes_dislikes";
 import GenerateSummary from "@/app/(home)/category/[category-name]/[company-name]/[id]/generate-summary";
 import { getSavedArticlesRepository } from "@/utils/supabase/saved-articles";
-import ErrorHandler from "@/app/(home)/category/[category-name]/[company-name]/[id]/error";
 import { toast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 
 dayjs.extend(advancedFormat);
@@ -49,58 +48,10 @@ export default function FeedMetadata({
 }: FeedMetadataProps) {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const ref = useRef<HTMLDivElement | null>(null);
 
-  const handleSaveArticle = async () => {
-    try {
-      setIsSaving(true);
-      const savedArticleRepo = getSavedArticlesRepository();
-
-      const { exists, error: checkError } =
-        await savedArticleRepo.isArticleSaved(link);
-
-      if (checkError) {
-        throw new Error(checkError.message);
-      }
-
-      if (exists) {
-        return <ErrorHandler error="article already saved" />;
-      }
-
-      const { error } = await savedArticleRepo.addSavedArticle({
-        article_title: title,
-        article_link: link,
-        article_content: content,
-        article_creator: creator,
-        publication_date: new Date(pubDate),
-        user_id: userID!.id!,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return toast({
-        title: "Article saved successfully",
-        variant: "default",
-      });
-    } catch (err) {
-      if (err instanceof Error) return <ErrorHandler error={err.message} />;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const formatDate = (date: string) => {
-    return dayjs(date).format("Do MMMM, YYYY");
-  };
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const queryClient = useQueryClient();
 
   const { data: userID } = useQuery({
     queryKey: ["user"],
@@ -109,15 +60,117 @@ export default function FeedMetadata({
       const { data } = await supabase.auth.getUser();
       return data.user;
     },
-    staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
 
+  const { data: isArticleSaved, isLoading: isCheckingSaved } = useQuery({
+    queryKey: ["saved-article", link],
+    queryFn: async () => {
+      if (!isVisible || !userID) return false;
+      const savedArticleRepo = getSavedArticlesRepository();
+      const { exists, error } = await savedArticleRepo.isArticleSaved(link);
+      if (error) throw new Error(error.message);
+      return exists;
+    },
+    enabled: isVisible && !!userID,
+    staleTime: Infinity,
+  });
+
+  const saveArticleMutation = useMutation({
+    mutationFn: async () => {
+      const savedArticleRepo = getSavedArticlesRepository();
+      return await savedArticleRepo.addSavedArticle({
+        article_title: title,
+        article_link: link,
+        article_content: content,
+        article_creator: creator,
+        publication_date: new Date(pubDate),
+        user_id: userID!.id!,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["saved-article", link] });
+      toast({
+        title: "Success",
+        description: "Article bookmarked successfully",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Alert",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveArticle = async () => {
+    if (isArticleSaved) {
+      return;
+    }
+    saveArticleMutation.mutate();
+  };
+
+  const formatDate = (date: string) => {
+    return dayjs(date).format("Do MMMM, YYYY");
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isButtonDisabled =
+    !userID || isCheckingSaved || saveArticleMutation.isPending;
+
+  const BookmarkButton = () => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="default"
+            className="bg-brand shadow-none w-[20px] hover:bg-brandSecondary"
+            disabled={isButtonDisabled}
+            onClick={handleSaveArticle}
+          >
+            <Bookmark
+              color={isArticleSaved ? "#FFD700" : "#9CA3AF"}
+              size={"20px"}
+              fill={isArticleSaved ? "#FFD700" : "none"}
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{isArticleSaved ? "Article Bookmarked" : "Bookmark Article"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
   if (!isMobile) {
     return (
       <TooltipProvider>
-        <div className="flex items-center text-s text-gray-400 my-2 space-x-2">
+        <div
+          ref={ref}
+          className="flex items-center text-s text-gray-400 my-2 space-x-2"
+        >
           {creator && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -170,90 +223,81 @@ export default function FeedMetadata({
             <TooltipContent>Generate Summary</TooltipContent>
           </Tooltip>
           <HandleLikesAndDislikes url={link!} />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="default"
-                className="bg-brand shadow-none w-[20px] hover:bg-brandSecondary"
-                disabled={isSaving || !userID}
-                onClick={handleSaveArticle}
-              >
-                <Bookmark color="#9CA3AF" size={"20px"} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Bookmark Article</TooltipContent>
-          </Tooltip>
+          <BookmarkButton />
         </div>
       </TooltipProvider>
     );
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={setIsOpen}>
-      <DrawerTrigger asChild>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="flex items-center text-gray-400 hover:text-white transition-colors py-3"
-                onClick={() => setIsOpen(true)}
-              >
-                <Info size="20px" className="mr-2" />
-                Article Details
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>View Article Information</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </DrawerTrigger>
-      <DrawerContent className="bg-brand border-0 text-gray-400">
-        <DrawerHeader>
-          <DrawerTitle className="text-gray-400">Article Details</DrawerTitle>
-        </DrawerHeader>
-        <div className="p-4 space-y-4">
-          {creator && (
+    <div ref={ref}>
+      <Drawer open={isOpen} onOpenChange={setIsOpen}>
+        <DrawerTrigger asChild>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="flex items-center text-gray-400 hover:text-white transition-colors py-3"
+                  onClick={() => setIsOpen(true)}
+                >
+                  <Info size="20px" className="mr-2" />
+                  Article Details
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View Article Information</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </DrawerTrigger>
+        <DrawerContent className="bg-brand border-0 text-gray-400">
+          <DrawerHeader>
+            <DrawerTitle className="text-gray-400">Article Details</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-4 space-y-4">
+            {creator && (
+              <div className="flex items-center gap-4">
+                <User size="20px" />
+                <span className="px-3">{creator}</span>
+              </div>
+            )}
+            {pubDate && (
+              <div className="flex items-center gap-4">
+                <DateIcon />
+                <span className="px-3">{formatDate(pubDate)}</span>
+              </div>
+            )}
+            {link && (
+              <div className="flex items-center gap-4">
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-500 flex items-center"
+                >
+                  <SquareArrowUpRight size="20px" className="mr-2" />
+                  <span className="px-4">Open Article</span>
+                </a>
+              </div>
+            )}
             <div className="flex items-center gap-4">
-              <User size="20px" />
-              <span className="px-3">{creator}</span>
+              <GenerateSummary url={link!} />
+              <HandleLikesAndDislikes url={link!} />
+              <BookmarkButton />
             </div>
-          )}
-          {pubDate && (
-            <div className="flex items-center gap-4">
-              <DateIcon />
-              <span className="px-3">{formatDate(pubDate)}</span>
-            </div>
-          )}
-          {link && (
-            <div className="flex items-center gap-4">
-              <a
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-500 flex items-center"
-              >
-                <SquareArrowUpRight size="20px" className="mr-2" />
-                <span className="px-4">Open Article</span>
-              </a>
-            </div>
-          )}
-          <div className="flex space-x-4">
-            <GenerateSummary url={link!} />
-            <HandleLikesAndDislikes url={link!} />
           </div>
-        </div>
-        <DrawerFooter>
-          <DrawerClose asChild>
-            <Button
-              variant="ghost"
-              className="bg-brandSecondary rounded-md hover:bg-brand"
-            >
-              Close
-            </Button>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+          <DrawerFooter>
+            <DrawerClose asChild>
+              <Button
+                variant="ghost"
+                className="bg-brandSecondary rounded-md hover:bg-brand"
+              >
+                Close
+              </Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    </div>
   );
 }
