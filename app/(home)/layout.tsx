@@ -54,7 +54,7 @@ export default async function Layout({
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Hide sidebar</p>
+                      <p>Toggle sidebar</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

@@ -1,4 +1,3 @@
-//TODO Fix the code currently single user is able to add a multiple likes
 "use client";
 
 import { ThumbsUp, ThumbsDown } from "lucide-react";
@@ -7,6 +6,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  CacheData,
   CacheProps,
   getCache,
   updateCache,
@@ -15,6 +15,20 @@ import {
 interface LikesDislikesProps {
   url: string;
 }
+
+const calculateTotals = (data: CacheData) => {
+  if (!data?.userID) return { totalLikes: 0, totalDislikes: 0 };
+  
+  return Object.values(data.userID).reduce(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (acc: { totalLikes: number; totalDislikes: number }, curr: any) => {
+      if (curr.hasLiked) acc.totalLikes += 1;
+      if (curr.hasDisliked) acc.totalDislikes += 1;
+      return acc;
+    },
+    { totalLikes: 0, totalDislikes: 0 }
+  );
+};
 
 const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -33,44 +47,61 @@ const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
     refetchOnReconnect: false,
   });
 
-  const { data: serverData, isLoading:isLikesDislikesFetched } = useQuery({
+  const { data: serverData, isLoading: isLikesDislikesFetched } = useQuery({
     queryKey: ["cache", url],
     queryFn: async () => {
       if (!isVisible || !userID) return null;
       return await getCache(url);
     },
     enabled: isVisible && !!userID,
-    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const updateCacheMutation = useMutation({
     mutationFn: async (cacheData: CacheProps) => {
       return await updateCache(cacheData);
     },
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ["cache", url] });
+      const previousData = queryClient.getQueryData(["cache", url]);
+
+      // Optimistically update cache
+      queryClient.setQueryData(["cache", url], (old: CacheData) => ({
+        userID: {
+          ...(old?.userID || {}),
+          [newData.userID]: {
+            hasLiked: newData.hasLiked,
+            hasDisliked: newData.hasDisliked,
+            totalLikes: newData.totalLikes,
+            totalDislikes: newData.totalDislikes,
+          },
+        },
+      }));
+
+      return { previousData };
+    },
+    onError: (err, newData, context) => {
+      queryClient.setQueryData(["cache", url], context?.previousData);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["cache", url] });
     },
   });
 
-  const [likes, setLikes] = useState(0);
-  const [dislikes, setDislikes] = useState(0);
-  const [userAction, setUserAction] = useState<"liked" | "disliked" | null>(
-    null
-  );
+  const [userAction, setUserAction] = useState<"liked" | "disliked" | null>(null);
+  const [totals, setTotals] = useState({ totalLikes: 0, totalDislikes: 0 });
+
   useEffect(() => {
     if (serverData) {
-      setLikes(serverData.totalLikes);
-      setDislikes(serverData.totalDislikes);
-      setUserAction(() => {
-        if (userID && serverData?.[userID.id]) {
-          return serverData[userID.id].hasLiked
-            ? "liked"
-            : serverData[userID.id].hasDisliked
-            ? "disliked"
-            : null;
-        }
-        return null;
-      });
+      const newTotals = calculateTotals(serverData);
+      setTotals(newTotals);
+      if (userID && serverData.userID[userID.id]) {
+        const userData = serverData.userID[userID.id];
+        setUserAction(
+          userData.hasLiked ? "liked" : userData.hasDisliked ? "disliked" : null
+        );
+      }
     }
   }, [serverData, userID]);
 
@@ -87,42 +118,64 @@ const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
   }, [url]);
 
   const handleLike = () => {
-    if (userAction !== "liked" && userID) {
-      const newLikes = likes + 1;
-      const newDislikes = userAction === "disliked" ? dislikes - 1 : dislikes;
-      setLikes(newLikes);
-      setDislikes(newDislikes);
-      setUserAction("liked");
+    if (!userID) return;
 
-      updateCacheMutation.mutate({
-        totalLikes: newLikes,
-        totalDislikes: newDislikes,
-        url: url,
-        userID: userID.id,
-        hasLiked: true,
-        hasDisliked: false,
-      });
-    }
+    const currentUserData = serverData?.userID?.[userID.id] || {
+      hasLiked: false,
+      hasDisliked: false,
+      totalLikes: 0,
+      totalDislikes: 0,
+    };
+
+    const newData = {
+      hasLiked: !currentUserData.hasLiked,
+      hasDisliked: false,
+      totalLikes: !currentUserData.hasLiked ? 1 : 0,
+      totalDislikes: 0,
+    };
+
+    setUserAction(newData.hasLiked ? "liked" : null);
+    setTotals(prev => ({
+      totalLikes: prev.totalLikes + (newData.hasLiked ? 1 : -1),
+      totalDislikes: prev.totalDislikes - (currentUserData.hasDisliked ? 1 : 0),
+    }));
+
+    updateCacheMutation.mutate({
+      ...newData,
+      url,
+      userID: userID.id,
+    });
   };
 
   const handleDislike = () => {
-    if (userAction !== "disliked" && userID) {
-      const newDislikes = dislikes + 1;
-      const newLikes = userAction === "liked" ? likes - 1 : likes;
+    if (!userID) return;
 
-      setLikes(newLikes);
-      setDislikes(newDislikes);
-      setUserAction("disliked");
+    const currentUserData = serverData?.userID?.[userID.id] || {
+      hasLiked: false,
+      hasDisliked: false,
+      totalLikes: 0,
+      totalDislikes: 0,
+    };
 
-      updateCacheMutation.mutate({
-        totalLikes: newLikes,
-        totalDislikes: newDislikes,
-        url: url,
-        userID: userID.id,
-        hasLiked: false,
-        hasDisliked: true,
-      });
-    }
+    const newData = {
+      hasLiked: false,
+      hasDisliked: !currentUserData.hasDisliked,
+      totalLikes: 0,
+      totalDislikes: !currentUserData.hasDisliked ? 1 : 0,
+    };
+
+    // Optimistically update UI
+    setUserAction(newData.hasDisliked ? "disliked" : null);
+    setTotals(prev => ({
+      totalLikes: prev.totalLikes - (currentUserData.hasLiked ? 1 : 0),
+      totalDislikes: prev.totalDislikes + (newData.hasDisliked ? 1 : -1),
+    }));
+
+    updateCacheMutation.mutate({
+      ...newData,
+      url,
+      userID: userID.id,
+    });
   };
 
   const isButtonDisabled = useMemo(() => {
@@ -141,7 +194,7 @@ const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
           color={userAction === "liked" ? "#10B981" : "#9CA3AF"}
           size={15}
         />
-        <span className="text-gray-500 text-sm">{likes}</span>
+        <span className="text-gray-500 text-sm">{totals.totalLikes}</span>
       </Button>
       <Button
         variant="ghost"
@@ -153,7 +206,7 @@ const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
           color={userAction === "disliked" ? "#EF4444" : "#9CA3AF"}
           size={15}
         />
-        <span className="text-gray-500 text-sm">{dislikes}</span>
+        <span className="text-gray-500 text-sm">{totals.totalDislikes}</span>
       </Button>
     </div>
   );
