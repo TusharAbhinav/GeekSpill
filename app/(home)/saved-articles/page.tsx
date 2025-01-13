@@ -1,10 +1,12 @@
 "use client";
+
 import { getSavedArticlesRepository } from "@/utils/supabase/saved-articles";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import Loading from "../category/[category-name]/[company-name]/[id]/loading";
 import { toast } from "@/hooks/use-toast";
 import FeedMetadata from "@/components/display-feed-metadata";
+import { Bookmark } from "lucide-react";
 
 const SavedArticles = () => {
   const {
@@ -21,14 +23,29 @@ const SavedArticles = () => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
   if (isLoading) return <Loading />;
-  if (isError || articles?.error)
-    return toast({
+
+  if (isError || articles?.error) {
+    toast({
       title: "Error",
       description: "Failed to load articles",
       variant: "destructive",
     });
-  return articles?.data?.map((article, index) => (
+    return null;
+  }
+
+  if (!articles?.data?.length) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+        <Bookmark className="w-16 h-16 text-gray-400 mb-4" />
+        <h2 className="text-xl font-semibold text-white mb-2">No bookmarks yet</h2>
+        <p className="text-gray-400">Your bookmarked articles will appear here</p>
+      </div>
+    );
+  }
+
+  return articles.data.map((article, index) => (
     <article
       key={index}
       className="bg-brand p-2 sm:p-4 rounded-lg shadow-md flex flex-col"

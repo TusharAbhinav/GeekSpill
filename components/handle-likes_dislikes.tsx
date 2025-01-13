@@ -54,6 +54,7 @@ const HandleLikesAndDislikes = ({ url }: LikesDislikesProps) => {
       return await getCache(url);
     },
     enabled: isVisible && !!userID,
+    staleTime:5*60*1000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });

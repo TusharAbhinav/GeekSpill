@@ -14,8 +14,10 @@ import { Sparkles, Zap, TrendingUp, FileText, ThumbsUp } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import MagicLinkLogin from "./magic-link";
 import gsap from "gsap";
+import CoffeeLogo from "@/app/public/assets/geekspill-icon";
 
 const LoginScreen = () => {
+  // Explicitly type the ref as HTMLDivElement
   const cardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,8 +26,9 @@ const LoginScreen = () => {
 
       const tl = gsap.timeline();
 
+      // Type assertion for children to ensure TypeScript knows it's an HTMLCollection
       tl.from(
-        cardsRef.current.children,
+        cardsRef.current.children as HTMLCollection,
         {
           opacity: 0, 
           y: 50,     
@@ -35,6 +38,7 @@ const LoginScreen = () => {
         }
       );
 
+      // Convert HTMLCollection to array and explicitly type as HTMLElement[]
       const cards = Array.from(cardsRef.current.children) as HTMLElement[];
 
       const cardAnimations = cards.map((card) => {
@@ -138,9 +142,12 @@ const LoginScreen = () => {
               Tech Insights Reimagined
             </Badge>
 
-            <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4 tracking-tight leading-tight">
-              GeekSpill
-            </h1>
+            <div className="flex items-center gap-4 mb-4">
+              <CoffeeLogo className="w-12 h-12 md:w-16 md:h-16 text-white" />
+              <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight">
+                GeekSpill
+              </h1>
+            </div>
 
             <p className="text-lg md:text-lg text-zinc-300 max-w-2xl mx-auto mb-6 font-medium">
               Your one-stop destination for the latest updates, insights, and breakthroughs from the tech industry.

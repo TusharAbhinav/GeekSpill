@@ -70,7 +70,17 @@ class SavedArticlesRepository {
       return { data, error };
     }
   );
+  async getArticleByLink(
+    article_link: string
+  ): Promise<{ data: { id: string } | null; error: PostgrestError | null }> {
+    const { data, error } = await this.supabase
+      .from("saved_articles")
+      .select("id")
+      .eq("article_link", article_link)
+      .maybeSingle();
 
+    return { data, error };
+  }
   async deleteSavedArticle(
     id: string
   ): Promise<{ success: boolean; error: PostgrestError | null }> {

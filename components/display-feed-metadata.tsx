@@ -64,18 +64,20 @@ export default function FeedMetadata({
     refetchOnReconnect: false,
   });
 
-  const { data: isArticleSaved, isLoading: isCheckingSaved } = useQuery({
+  const { data: savedArticleData, isLoading: isCheckingSaved } = useQuery({
     queryKey: ["saved-article", link],
     queryFn: async () => {
-      if (!isVisible || !userID) return false;
+      if (!isVisible || !userID) return null;
       const savedArticleRepo = getSavedArticlesRepository();
-      const { exists, error } = await savedArticleRepo.isArticleSaved(link);
+      const { data, error } = await savedArticleRepo.getArticleByLink(link);
       if (error) throw new Error(error.message);
-      return exists;
+      return data;
     },
     enabled: isVisible && !!userID,
     staleTime: Infinity,
   });
+
+  const isArticleSaved = !!savedArticleData;
 
   const saveArticleMutation = useMutation({
     mutationFn: async () => {
@@ -107,11 +109,36 @@ export default function FeedMetadata({
     },
   });
 
+  const deleteArticleMutation = useMutation({
+    mutationFn: async () => {
+      if (!savedArticleData?.id) throw new Error("No saved article ID found");
+      const savedArticleRepo = getSavedArticlesRepository();
+      return await savedArticleRepo.deleteSavedArticle(savedArticleData.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["saved-article", link] });
+      toast({
+        title: "Success",
+        description: "Article removed from bookmarks",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Alert",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSaveArticle = async () => {
     if (isArticleSaved) {
-      return;
+      deleteArticleMutation.mutate();
+    } else {
+      saveArticleMutation.mutate();
     }
-    saveArticleMutation.mutate();
   };
 
   const formatDate = (date: string) => {
@@ -138,7 +165,10 @@ export default function FeedMetadata({
   }, []);
 
   const isButtonDisabled =
-    !userID || isCheckingSaved || saveArticleMutation.isPending;
+    !userID || 
+    isCheckingSaved || 
+    saveArticleMutation.isPending || 
+    deleteArticleMutation.isPending;
 
   const BookmarkButton = () => (
     <TooltipProvider>
@@ -158,12 +188,12 @@ export default function FeedMetadata({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{isArticleSaved ? "Article Bookmarked" : "Bookmark Article"}</p>
+          <p>{isArticleSaved ? "Remove Bookmark" : "Bookmark Article"}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
-
+  
   if (!isMobile) {
     return (
       <TooltipProvider>
