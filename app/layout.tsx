@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import QueryClientWrapper from "./queryClient";
+import { Analytics } from "@vercel/analytics/react"
 
 export const metadata: Metadata = {
   title: "GeekSpill",
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body>
         <QueryClientWrapper>{children}</QueryClientWrapper>
         <Toaster />
+        <Analytics/>
       </body>
     </html>
   );
