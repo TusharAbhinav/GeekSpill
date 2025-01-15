@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import ErrorHandler from "./error";
 import Parser from "rss-parser";
 import FeedMetadata from "@/components/display-feed-metadata";
-import { Metadata, ResolvingMetadata } from "next";
+import { Metadata, ResolvingMetadata } from 'next';
 
 type InitialFeedData = {
   data: RSSFeed[] | null;
@@ -19,9 +19,9 @@ const parser = new Parser();
 async function fetchFeedContent(url: string) {
   try {
     const response = await fetch(url, {
-      next: {
-        revalidate: 300,
-      },
+      next:{
+        revalidate:300
+      }
     });
     if (!response.ok) {
       throw new Error(`Failed to fetch feed: ${response.statusText}`);
@@ -39,63 +39,54 @@ export async function generateMetadata(
   { initialFeedData }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  if (
-    initialFeedData.error ||
-    !initialFeedData.data ||
-    initialFeedData.data.length === 0
-  ) {
+  if (initialFeedData.error || !initialFeedData.data || initialFeedData.data.length === 0) {
     return {
-      title: "Feed Not Found",
-      description: "The requested RSS feed could not be found.",
+      title: 'Feed Not Found',
+      description: 'The requested RSS feed could not be found.',
     };
   }
 
   const feed = initialFeedData.data[0];
-
+  
   try {
     const feedContent = await fetchFeedContent(feed.url);
-
+    
     const previousMetadata = await parent;
 
     return {
       title: feed.name,
-      description:
-        feedContent.description || `Latest content from ${feed.name}`,
+      description: feedContent.description || `Latest content from ${feed.name}`,
       openGraph: {
         title: feed.name,
-        description:
-          feedContent.description || `Latest content from ${feed.name}`,
+        description: feedContent.description || `Latest content from ${feed.name}`,
         url: feed.url,
         siteName: feedContent.title || feed.name,
-        locale: "en_US",
-        type: "website",
+        locale: 'en_US',
+        type: 'website',
       },
       twitter: {
-        card: "summary_large_image",
+        card: 'summary_large_image',
         title: feed.name,
-        description:
-          feedContent.description || `Latest content from ${feed.name}`,
+        description: feedContent.description || `Latest content from ${feed.name}`,
       },
       alternates: {
         canonical: feed.url,
         types: {
-          "application/rss+xml": feed.url,
+          'application/rss+xml': feed.url,
         },
       },
       robots: {
         index: true,
         follow: true,
       },
-      authors: feedContent.creator
-        ? [{ name: feedContent.creator }]
-        : undefined,
+      authors: feedContent.creator ? [{ name: feedContent.creator }] : undefined,
       publisher: feedContent.title || feed.name,
       keywords: [
         ...(previousMetadata.keywords || []),
-        "RSS Feed",
+        'RSS Feed',
         feed.name,
-        "News",
-        "Updates",
+        'News',
+        'Updates'
       ],
     };
   } catch (error) {
@@ -106,7 +97,9 @@ export async function generateMetadata(
   }
 }
 
-export default async function DisplayFeedContent({ initialFeedData }: Props) {
+export default async function DisplayFeedContent({
+  initialFeedData,
+}: Props) {
   if (initialFeedData.error) {
     return (
       <ErrorHandler
@@ -128,7 +121,6 @@ export default async function DisplayFeedContent({ initialFeedData }: Props) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
   }>;
-
   try {
     feedContent = await fetchFeedContent(feed.url);
   } catch (error) {
@@ -136,11 +128,11 @@ export default async function DisplayFeedContent({ initialFeedData }: Props) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 text-foreground">
-      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 text-white">
+    <div className="p-2 sm:p-4 text-foreground w-full">
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-4 text-white">
         {feed.name}
       </h1>
-      <div className="grid gap-6 w-full">
+      <div className="space-y-4 sm:space-y-6 w-full">
         {feedContent.items.map((item, index) => {
           const availableProps = {
             title:
@@ -167,31 +159,28 @@ export default async function DisplayFeedContent({ initialFeedData }: Props) {
                 ? item.contentSnippet
                 : null,
           };
-
           return (
             <article
               key={index}
-              className="bg-brand rounded-lg shadow-md min-h-[12rem] flex flex-col"
+              className="bg-brand  p-2 sm:p-4 rounded-lg shadow-md flex flex-col"
             >
-              <header className="p-4 border-b border-gray-700">
+              <header className="mb-2 sm:mb-4 border-b border-gray-700 pb-2">
                 {availableProps.title && (
-                  <h2 className="text-lg sm:text-xl font-bold text-white mb-2">
+                  <h2 className="text-lg sm:text-xl font-bold text-white">
                     {item.title}
                   </h2>
                 )}
-                <div className="h-full">
-                  <FeedMetadata
-                    creator={availableProps.creator!}
-                    link={availableProps.link!}
-                    pubDate={availableProps.pubDate!}
-                    title={availableProps.title!}
-                    content={availableProps.content!}
-                  />
-                </div>
+                <FeedMetadata
+                  creator={availableProps.creator!}
+                  link={availableProps.link!}
+                  pubDate={availableProps.pubDate!}
+                  title={availableProps.title!}
+                  content={availableProps.content!}
+                />
               </header>
               {availableProps.content && (
                 <div
-                  className="p-4 prose prose-invert max-w-none h-full
+                  className="prose prose-invert max-w-none h-full
                     prose-headings:text-white 
                     prose-a:text-blue-400 
                     prose-strong:text-white

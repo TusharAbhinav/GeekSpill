@@ -62,7 +62,7 @@ export default async function Layout({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Link href="/saved-articles">
+                      <Link href="/bookmarked-articles">
                         <Button
                           variant="default"
                           className="bg-brand shadow-sm w-[20px] hover:bg-brandSecondary"

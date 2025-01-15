@@ -48,7 +48,6 @@ export default function FeedMetadata({
 }: FeedMetadataProps) {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [isVisible, setIsVisible] = useState<boolean>(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
   const queryClient = useQueryClient();
@@ -67,13 +66,13 @@ export default function FeedMetadata({
   const { data: savedArticleData, isLoading: isCheckingSaved } = useQuery({
     queryKey: ["saved-article", link],
     queryFn: async () => {
-      if (!isVisible || !userID) return null;
+      if (!userID) return null;
       const savedArticleRepo = getSavedArticlesRepository();
       const { data, error } = await savedArticleRepo.getArticleByLink(link);
       if (error) throw new Error(error.message);
       return data;
     },
-    enabled: isVisible && !!userID,
+    enabled: !!userID,
     staleTime: Infinity,
   });
 
@@ -144,18 +143,19 @@ export default function FeedMetadata({
   const formatDate = (date: string) => {
     return dayjs(date).format("Do MMMM, YYYY");
   };
-
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
+    if (isOpen && userID) {
+      queryClient.prefetchQuery({
+        queryKey: ["saved-article", link],
+        queryFn: async () => {
+          const savedArticleRepo = getSavedArticlesRepository();
+          const { data, error } = await savedArticleRepo.getArticleByLink(link);
+          if (error) throw new Error(error.message);
+          return data;
+        },
+      });
+    }
+  }, [isOpen, userID, link, queryClient]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -169,6 +169,18 @@ export default function FeedMetadata({
     isCheckingSaved || 
     saveArticleMutation.isPending || 
     deleteArticleMutation.isPending;
+
+  const MobileActionItem = ({ icon, label, children }: { icon: React.ReactNode, label: string, children: React.ReactNode }) => (
+    <div className="flex space-y-2 w-full">
+      <div className="flex items-center space-x-2 text-gray-400">
+        {icon}
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      <div className="pl-7">
+        {children}
+      </div>
+    </div>
+  );
 
   const BookmarkButton = () => (
     <TooltipProvider>
@@ -193,7 +205,7 @@ export default function FeedMetadata({
       </Tooltip>
     </TooltipProvider>
   );
-  
+
   if (!isMobile) {
     return (
       <TooltipProvider>
@@ -280,42 +292,49 @@ export default function FeedMetadata({
             </Tooltip>
           </TooltipProvider>
         </DrawerTrigger>
-        <DrawerContent className="bg-brand border-0 text-gray-400">
+        <DrawerContent className="bg-brand border-0">
           <DrawerHeader>
             <DrawerTitle className="text-gray-400">Article Details</DrawerTitle>
           </DrawerHeader>
-          <div className="p-4 space-y-4">
+          <div className="p-4 flex flex-col space-y-6">
             {creator && (
-              <div className="flex items-center gap-4">
-                <User size="20px" />
-                <span className="px-3">{creator}</span>
-              </div>
+              <MobileActionItem icon={<User size="20px" />} label="Author">
+                <span className="text-gray-400">{creator}</span>
+              </MobileActionItem>
             )}
+            
             {pubDate && (
-              <div className="flex items-center gap-4">
-                <DateIcon />
-                <span className="px-3">{formatDate(pubDate)}</span>
-              </div>
+              <MobileActionItem icon={<DateIcon />} label="Publication Date">
+                <span className="text-gray-400">{formatDate(pubDate)}</span>
+              </MobileActionItem>
             )}
+            
             {link && (
-              <div className="flex items-center gap-4">
+              <MobileActionItem icon={<SquareArrowUpRight size="20px" />} label="Original Article">
                 <a
                   href={link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-500 flex items-center"
+                  className="text-blue-400 hover:text-blue-500"
                 >
-                  <SquareArrowUpRight size="20px" className="mr-2" />
-                  <span className="px-4">Open Article</span>
+                  Open Article
                 </a>
-              </div>
+              </MobileActionItem>
             )}
-            <div className="flex items-center gap-4">
+            
+            <MobileActionItem icon={<Info size="20px" />} label="Generate Summary">
               <GenerateSummary url={link!} />
+            </MobileActionItem>
+            
+            <MobileActionItem icon={<Info size="20px" />} label="Engagement">
               <HandleLikesAndDislikes url={link!} />
+            </MobileActionItem>
+            
+            <MobileActionItem icon={<Bookmark size="20px" />} label="Bookmark">
               <BookmarkButton />
-            </div>
+            </MobileActionItem>
           </div>
+          
           <DrawerFooter>
             <DrawerClose asChild>
               <Button
