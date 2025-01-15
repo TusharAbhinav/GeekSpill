@@ -339,7 +339,7 @@ export default function FeedMetadata({
             <DrawerClose asChild>
               <Button
                 variant="ghost"
-                className="bg-brandSecondary rounded-md hover:bg-brand"
+                className="bg-brandSecondary text-white rounded-md hover:bg-brand"
               >
                 Close
               </Button>
