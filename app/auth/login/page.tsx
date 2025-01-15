@@ -21,17 +21,14 @@ const LoginScreen = () => {
   const letterGRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    // Enhanced G letter animations
     if (letterGRef.current) {
       letterGRef.current.style.display = 'inline-block';
       
-      // Create a timeline for the G animations
       const gTimeline = gsap.timeline({
         repeat: -1,
         repeatDelay: 1
       });
 
-      // Add multiple animations to the timeline
       gTimeline
         .to(letterGRef.current, {
           rotation: 360,
@@ -64,11 +61,10 @@ const LoginScreen = () => {
           ease: "power1.inOut"
         });
 
-      // Add a hover animation
       letterGRef.current.addEventListener('mouseenter', () => {
         gsap.to(letterGRef.current, {
           scale: 1.8,
-          color: '#4ade80', // bright green
+          color: '#4ade80',
           duration: 0.3,
           ease: "power2.out"
         });
@@ -77,20 +73,18 @@ const LoginScreen = () => {
       letterGRef.current.addEventListener('mouseleave', () => {
         gsap.to(letterGRef.current, {
           scale: 1,
-          color: '#4ade80', // back to original green
+          color: '#4ade80',
           duration: 0.3,
           ease: "power2.in"
         });
       });
     }
 
-    // Initialize card animations
     const initAnimations = () => {
       if (!cardsRef.current) return;
 
       const tl = gsap.timeline();
 
-      // Animate cards entering
       tl.from(
         cardsRef.current.children as HTMLCollection,
         {
@@ -104,7 +98,6 @@ const LoginScreen = () => {
 
       const cards = Array.from(cardsRef.current.children) as HTMLElement[];
 
-      // Card hover animations
       const cardAnimations = cards.map((card) => {
         const enterAnimation = gsap.to(card, {
           scale: 1.03,
@@ -129,7 +122,6 @@ const LoginScreen = () => {
         return { enterAnimation, leaveAnimation, element: card, handlers: { handleEnter, handleLeave } };
       });
 
-      // Badge floating animation
       const badge = document.querySelector(".floating-badge") as HTMLElement;
       if (badge) {
         const badgeAnimation = gsap.to(badge, {
@@ -141,7 +133,6 @@ const LoginScreen = () => {
           delay: 0.5,
         });
 
-        // Cleanup function
         return () => {
           cardAnimations.forEach(({ enterAnimation, leaveAnimation, element, handlers }) => {
             enterAnimation.kill();
