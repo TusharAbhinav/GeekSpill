@@ -12,7 +12,28 @@ const MagicLinkLogin = () => {
   const [error, setError] = useState<string | null>(null);
   const [successLogin, setSuccessLogin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [handleText, setHandleText] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError("Email is required");
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError("Please enter a valid email address");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
   const handleLogInWithEmail = async () => {
+    if (!validateEmail(handleText)) {
+      return;
+    }
+
     try {
       const supabase = createClient();
       setLoading(true);
@@ -31,7 +52,16 @@ const MagicLinkLogin = () => {
       setLoading(false);
     }
   };
-  const [handleText, setHandleText] = useState<string>("");
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setHandleText(value);
+    if (value) {
+      validateEmail(value);
+    } else {
+      setEmailError("");
+    }
+  };
 
   if (error) {
     return <ErrorHandler error={error} />;
@@ -45,24 +75,30 @@ const MagicLinkLogin = () => {
   }
 
   return (
-    <section className="flex gap-4">
-      <Input
-        type="email"
-        name="Email"
-        placeholder="Email"
-        className="bg-brand  placeholder:text-zinc-400 focus-visible:bg-brandSecondary text-white  rounded-[12px] border-0 hover:bg-brandSecondary"
-        onChange={(e) => setHandleText(e.target.value)}
-      />
-      <Button
-        className="w-min  bg-brand text-white rounded-[12px] hover:bg-brandSecondary"
-        onClick={handleLogInWithEmail}
-        type="submit"
-        disabled={loading}
-      >
-        <Mail />
-        Log in with Mail
-      </Button>
-    </section>
+    <div className="flex flex-col gap-1">
+      <section className="flex gap-4">
+        <Input
+          type="email"
+          name="Email"
+          placeholder="Email"
+          className="bg-brand border-white/10 placeholder:text-white focus-visible:bg-brandSecondary text-white rounded-[12px] hover:bg-brandSecondary"
+          onChange={handleInputChange}
+          value={handleText}
+        />
+        <Button
+          className="w-min bg-brand  border-[1px] border-white/10 text-white rounded-[12px] hover:bg-brandSecondary"
+          onClick={handleLogInWithEmail}
+          type="submit"
+          disabled={loading || !!emailError}
+        >
+          <Mail />
+          Log in with Mail
+        </Button>
+      </section>
+      {emailError && (
+        <span className="text-red-500 text-sm ml-1">{emailError}</span>
+      )}
+    </div>
   );
 };
 

@@ -4,14 +4,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader, Zap } from "lucide-react";
 import ErrorHandler from "./error";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { useQuery } from "@tanstack/react-query";
+import {
+  getSummaryCache,
+  updateSummaryCache,
+} from "@/app/actions/update-summary_cache";
 
 const fetchSummary = async (url?: string) => {
+  if (url) {
+    const summaryResponse = (await getSummaryCache({ link: url })) as string;
+    if (summaryResponse) return summaryResponse;
+  }
   const response = await fetch(`/api/generate-summary`, {
     method: "POST",
     headers: {
@@ -23,8 +27,12 @@ const fetchSummary = async (url?: string) => {
   if (!response.ok) {
     throw new Error(`Failed to fetch summary: ${response.statusText}`);
   }
-
-  return response.json();
+  const summary = await response.json();
+  await updateSummaryCache({
+    link: url!,
+    generatedSummary: JSON.stringify(summary)!,
+  });
+  return summary;
 };
 
 const GenerateSummary = ({ url }: { url?: string }) => {

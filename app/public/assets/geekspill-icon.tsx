@@ -1,73 +1,76 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
-interface CoffeeLogoProps {
-  className?: string;
-}
 
-const GeekSpillIcon: React.FC<CoffeeLogoProps> = ({ className = "" }) => {
+const GeekSpillIcon = ({ className = "" }) => {
   const logoRef = useRef<SVGSVGElement | null>(null);
   
   useEffect(() => {
-    // Early return if ref is null
     if (!logoRef.current) return;
-
-    // Get the current ref value to use in animations
+    
     const logo = logoRef.current;
     
-    // Steam animation timeline
-    const steamTimeline = gsap.timeline({
-      repeat: -1,
-      repeatDelay: 0.5,
-    });
-
-    // Animate each steam line
-    ['steam-1', 'steam-2', 'steam-3'].forEach((steam, index) => {
-      const steamElement = logo.querySelector(`.${steam}`);
-      if (!steamElement) return;
-
-      steamTimeline.fromTo(
-        steamElement,
+    // Binary text animation
+    const binaryElements = logo.querySelectorAll('.binary-text');
+    binaryElements.forEach((binary, index) => {
+      gsap.fromTo(binary,
         {
           opacity: 0,
-          y: 0,
+          x: -10
         },
         {
           opacity: 1,
-          y: -10,
-          duration: 1,
-          ease: "power1.inOut",
-        },
-        index * 0.2
-      ).to(
-        steamElement,
-        {
-          opacity: 0,
-          y: -20,
-          duration: 1,
-          ease: "power1.inOut",
-        },
-        ">-0.5"
+          x: 0,
+          duration: 0.5,
+          delay: index * 0.2,
+          repeat: -1,
+          repeatDelay: 3,
+          ease: "power2.out"
+        }
       );
     });
 
-    // Cup hover animation
-    const cupElement = logo.querySelector('.coffee-cup');
-    if (cupElement) {
-      const cupAnimation = gsap.to(cupElement, {
+    // Quill pen animation
+    const quill = logo.querySelector('.quill');
+    if (quill) {
+      gsap.to(quill, {
+        rotate: -2,
         y: -2,
-        duration: 2,
+        duration: 1.5,
         repeat: -1,
         yoyo: true,
         ease: "power1.inOut",
+        transformOrigin: "bottom"
       });
-
-      // Cleanup
-      return () => {
-        steamTimeline.kill();
-        cupAnimation.kill();
-      };
     }
+
+    // Ink drop animation
+    const inkDrops = logo.querySelectorAll('.ink-drop');
+    inkDrops.forEach((drop, index) => {
+      gsap.fromTo(drop,
+        {
+          scale: 0,
+          opacity: 1,
+          y: 0
+        },
+        {
+          scale: 1,
+          opacity: 0,
+          y: 15,
+          duration: 1,
+          delay: index * 0.3,
+          repeat: -1,
+          repeatDelay: 2,
+          ease: "power2.out"
+        }
+      );
+    });
+
+    return () => {
+      gsap.killTweensOf(binaryElements);
+      gsap.killTweensOf(quill);
+      gsap.killTweensOf(inkDrops);
+    };
   }, []);
 
   return (
@@ -76,79 +79,50 @@ const GeekSpillIcon: React.FC<CoffeeLogoProps> = ({ className = "" }) => {
       className={className}
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 100 100"
-      aria-label="Coffee cup logo"
+      aria-label="Digital Quill Logo"
     >
-      {/* Main Cup Body */}
-      <path
-        className="coffee-cup"
-        d="M25 40 C25 40, 25 75, 25 75 C25 85, 35 90, 50 90 C65 90, 75 85, 75 75 C75 75, 75 40, 75 40"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      
-      {/* Coffee Surface */}
-      <path
-        d="M25 45 C35 48, 65 48, 75 45"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
+      {/* Quill Pen */}
+      <g className="quill">
+        <path
+          d="M30 70 L45 30 C45 30, 48 25, 50 25 C52 25, 55 30, 55 30 L70 70"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M45 30 L55 30"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M48 40 L52 40"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </g>
 
-      {/* Cup Rim */}
-      <path
-        d="M22 40 C35 37, 65 37, 78 40"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
+      {/* Binary Text */}
+      <text className="binary-text" x="20" y="80" fill="currentColor" fontSize="8">10</text>
+      <text className="binary-text" x="35" y="80" fill="currentColor" fontSize="8">01</text>
+      <text className="binary-text" x="50" y="80" fill="currentColor" fontSize="8">10</text>
+      <text className="binary-text" x="65" y="80" fill="currentColor" fontSize="8">01</text>
 
-      {/* Handle */}
-      <path
-        d="M75 50 C85 50, 90 55, 90 62.5 C90 70, 85 75, 75 75"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Ink Drops */}
+      <circle className="ink-drop" cx="50" cy="70" r="2" fill="currentColor" />
+      <circle className="ink-drop" cx="45" cy="75" r="1.5" fill="currentColor" />
+      <circle className="ink-drop" cx="55" cy="73" r="1.5" fill="currentColor" />
 
-      {/* Steam Lines */}
+      {/* Base Line */}
       <path
-        className="steam steam-1"
-        d="M35 20 C38 18, 37 12, 35 10"
+        d="M20 85 C35 88, 65 88, 80 85"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        className="steam steam-2"
-        d="M45 15 C48 13, 47 7, 45 5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        className="steam steam-3"
-        d="M55 20 C58 18, 57 12, 55 10"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-
-      {/* Saucer */}
-      <path
-        d="M20 92 C35 95, 65 95, 80 92"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
         strokeLinecap="round"
       />
     </svg>

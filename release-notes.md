@@ -24,11 +24,5 @@ Curious about the code or want to take a peek? Check out [GeekSpill on GitHub](#
 
 ---
 
-## The GeekSpill Origin Story 📖
-
-Born from countless hours of tab-switching, multiple browser windows, and the constant FOMO of missing out on the latest tech blogs. I created GeekSpill because I wanted a single place to consume tech content without the hassle.
-
-No big team, no corporate backing – just a developer's solution to a developer's problem.
-
 Stay curious,
 The Chill Guy  🚀

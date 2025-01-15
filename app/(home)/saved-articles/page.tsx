@@ -8,6 +8,11 @@ import { toast } from "@/hooks/use-toast";
 import FeedMetadata from "@/components/display-feed-metadata";
 import { Bookmark } from "lucide-react";
 
+const isValidDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.getTime() > 86400000 && !isNaN(date.getTime());
+};
+
 const SavedArticles = () => {
   const {
     data: articles,
@@ -45,43 +50,47 @@ const SavedArticles = () => {
     );
   }
 
-  return articles.data.map((article, index) => (
-    <article
-      key={index}
-      className="bg-brand p-2 sm:p-4 rounded-lg shadow-md flex flex-col"
-    >
-      <header className="mb-2 sm:mb-4 border-b border-gray-700 pb-2">
-        {article.article_title && (
-          <h2 className="text-lg sm:text-xl font-bold text-white">
-            {article.article_title}
-          </h2>
+  return articles.data.map((article, index) => {
+    const validDate = article.publication_date && isValidDate(article.publication_date.toString());
+    
+    return (
+      <article
+        key={index}
+        className="bg-brand p-2 sm:p-4 rounded-lg shadow-md flex flex-col"
+      >
+        <header className="mb-2 sm:mb-4 border-b border-gray-700 pb-2">
+          {article.article_title && (
+            <h2 className="text-lg sm:text-xl font-bold text-white">
+              {article.article_title}
+            </h2>
+          )}
+          <FeedMetadata
+            creator={article.article_creator!}
+            link={article.article_link!}
+            pubDate={validDate ? article.publication_date!.toString() : ''}
+            title={article.article_title!}
+            content={article.article_content!}
+          />
+        </header>
+        {article.article_content && (
+          <div
+            className="prose prose-invert max-w-none
+                        prose-headings:text-white 
+                        prose-a:text-blue-400 
+                        prose-strong:text-white
+                        prose-code:text-white
+                        prose-img:w-full
+                        prose-pre:bg-brandSecondary
+                        prose-sm sm:prose-base
+                        "
+            dangerouslySetInnerHTML={{
+              __html: article.article_content!,
+            }}
+          />
         )}
-        <FeedMetadata
-          creator={article.article_creator!}
-          link={article.article_link!}
-          pubDate={article.publication_date!.toString()}
-          title={article.article_title!}
-          content={article.article_content!}
-        />
-      </header>
-      {article.article_content && (
-        <div
-          className="prose prose-invert max-w-none
-                      prose-headings:text-white 
-                      prose-a:text-blue-400 
-                      prose-strong:text-white
-                      prose-code:text-white
-                      prose-img:w-full
-                      prose-pre:bg-brandSecondary
-                      prose-sm sm:prose-base
-                      "
-          dangerouslySetInnerHTML={{
-            __html: article.article_content!,
-          }}
-        />
-      )}
-    </article>
-  ));
+      </article>
+    );
+  });
 };
 
 export default SavedArticles;

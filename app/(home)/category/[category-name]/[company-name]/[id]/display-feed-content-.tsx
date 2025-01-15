@@ -3,10 +3,15 @@ import { notFound } from "next/navigation";
 import ErrorHandler from "./error";
 import Parser from "rss-parser";
 import FeedMetadata from "@/components/display-feed-metadata";
+import { Metadata, ResolvingMetadata } from 'next';
 
 type InitialFeedData = {
   data: RSSFeed[] | null;
   error: { details: string } | null;
+};
+
+type Props = {
+  initialFeedData: InitialFeedData;
 };
 
 const parser = new Parser();
@@ -28,12 +33,71 @@ async function fetchFeedContent(url: string) {
   }
 }
 
+export async function generateMetadata(
+  { initialFeedData }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  if (initialFeedData.error || !initialFeedData.data || initialFeedData.data.length === 0) {
+    return {
+      title: 'Feed Not Found',
+      description: 'The requested RSS feed could not be found.',
+    };
+  }
+
+  const feed = initialFeedData.data[0];
+  
+  try {
+    const feedContent = await fetchFeedContent(feed.url);
+    
+    const previousMetadata = await parent;
+
+    return {
+      title: feed.name,
+      description: feedContent.description || `Latest content from ${feed.name}`,
+      openGraph: {
+        title: feed.name,
+        description: feedContent.description || `Latest content from ${feed.name}`,
+        url: feed.url,
+        siteName: feedContent.title || feed.name,
+        locale: 'en_US',
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: feed.name,
+        description: feedContent.description || `Latest content from ${feed.name}`,
+      },
+      alternates: {
+        canonical: feed.url,
+        types: {
+          'application/rss+xml': feed.url,
+        },
+      },
+      robots: {
+        index: true,
+        follow: true,
+      },
+      authors: feedContent.creator ? [{ name: feedContent.creator }] : undefined,
+      publisher: feedContent.title || feed.name,
+      keywords: [
+        ...(previousMetadata.keywords || []),
+        'RSS Feed',
+        feed.name,
+        'News',
+        'Updates'
+      ],
+    };
+  } catch (error) {
+    return {
+      title: feed.name,
+      description: `RSS feed content from ${feed.name} ${error}`,
+    };
+  }
+}
 
 export default async function DisplayFeedContent({
   initialFeedData,
-}: {
-  initialFeedData: InitialFeedData;
-}) {
+}: Props) {
   if (initialFeedData.error) {
     return (
       <ErrorHandler
@@ -57,7 +121,6 @@ export default async function DisplayFeedContent({
   }>;
   try {
     feedContent = await fetchFeedContent(feed.url);
-    console.log("Feed Properties:", Object.keys(feedContent));
   } catch (error) {
     return <ErrorHandler error={`${error} ${feed.name}`} />;
   }

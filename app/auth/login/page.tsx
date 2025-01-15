@@ -10,23 +10,87 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Sparkles, Zap, TrendingUp, FileText, ThumbsUp } from 'lucide-react';
+import { Zap, TrendingUp, FileText, ThumbsUp, Building } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import MagicLinkLogin from "./magic-link";
 import gsap from "gsap";
-import CoffeeLogo from "@/app/public/assets/geekspill-icon";
+import GeekSpillLogo from "@/app/public/assets/geekspill-icon";
 
 const LoginScreen = () => {
-  // Explicitly type the ref as HTMLDivElement
   const cardsRef = useRef<HTMLDivElement>(null);
+  const letterGRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    // Enhanced G letter animations
+    if (letterGRef.current) {
+      letterGRef.current.style.display = 'inline-block';
+      
+      // Create a timeline for the G animations
+      const gTimeline = gsap.timeline({
+        repeat: -1,
+        repeatDelay: 1
+      });
+
+      // Add multiple animations to the timeline
+      gTimeline
+        .to(letterGRef.current, {
+          rotation: 360,
+          duration: 1,
+          ease: "power2.inOut"
+        })
+        .to(letterGRef.current, {
+          scale: 1.5,
+          duration: 0.5,
+          ease: "elastic.out(1, 0.3)"
+        })
+        .to(letterGRef.current, {
+          scale: 1,
+          duration: 0.5,
+          ease: "elastic.out(1, 0.3)"
+        })
+        .to(letterGRef.current, {
+          y: -20,
+          duration: 0.4,
+          ease: "power2.out"
+        })
+        .to(letterGRef.current, {
+          y: 0,
+          duration: 0.4,
+          ease: "bounce.out"
+        })
+        .to(letterGRef.current, {
+          rotationY: 360,
+          duration: 1,
+          ease: "power1.inOut"
+        });
+
+      // Add a hover animation
+      letterGRef.current.addEventListener('mouseenter', () => {
+        gsap.to(letterGRef.current, {
+          scale: 1.8,
+          color: '#4ade80', // bright green
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      });
+
+      letterGRef.current.addEventListener('mouseleave', () => {
+        gsap.to(letterGRef.current, {
+          scale: 1,
+          color: '#4ade80', // back to original green
+          duration: 0.3,
+          ease: "power2.in"
+        });
+      });
+    }
+
+    // Initialize card animations
     const initAnimations = () => {
       if (!cardsRef.current) return;
 
       const tl = gsap.timeline();
 
-      // Type assertion for children to ensure TypeScript knows it's an HTMLCollection
+      // Animate cards entering
       tl.from(
         cardsRef.current.children as HTMLCollection,
         {
@@ -38,9 +102,9 @@ const LoginScreen = () => {
         }
       );
 
-      // Convert HTMLCollection to array and explicitly type as HTMLElement[]
       const cards = Array.from(cardsRef.current.children) as HTMLElement[];
 
+      // Card hover animations
       const cardAnimations = cards.map((card) => {
         const enterAnimation = gsap.to(card, {
           scale: 1.03,
@@ -65,6 +129,7 @@ const LoginScreen = () => {
         return { enterAnimation, leaveAnimation, element: card, handlers: { handleEnter, handleLeave } };
       });
 
+      // Badge floating animation
       const badge = document.querySelector(".floating-badge") as HTMLElement;
       if (badge) {
         const badgeAnimation = gsap.to(badge, {
@@ -76,6 +141,7 @@ const LoginScreen = () => {
           delay: 0.5,
         });
 
+        // Cleanup function
         return () => {
           cardAnimations.forEach(({ enterAnimation, leaveAnimation, element, handlers }) => {
             enterAnimation.kill();
@@ -84,6 +150,9 @@ const LoginScreen = () => {
             element.removeEventListener("mouseleave", handlers.handleLeave);
           });
           badgeAnimation.kill();
+          if (letterGRef.current) {
+            gsap.killTweensOf(letterGRef.current);
+          }
         };
       }
     };
@@ -94,10 +163,10 @@ const LoginScreen = () => {
 
   const cards = [
     {
-      icon: <Sparkles className="w-6 h-6 text-purple-400" />,
-      title: "Diverse Content",
-      description: "Explore a wide range of tech topics.",
-      content: "From AI and System Design to Engineering and beyond.",
+      icon: <Building className="w-6 h-6 text-purple-400" />,
+      title: "Tech Giants' Blogs",
+      description: "All major tech blogs in one place",
+      content: "Access technical articles from Google, Microsoft, Meta, AWS, and more.",
       gradient: "from-purple-500/20 to-transparent",
     },
     {
@@ -143,14 +212,14 @@ const LoginScreen = () => {
             </Badge>
 
             <div className="flex items-center gap-4 mb-4">
-              <CoffeeLogo className="w-12 h-12 md:w-16 md:h-16 text-white" />
+              <GeekSpillLogo className="w-12 h-12 md:w-16 md:h-16 text-white" />
               <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight">
-                GeekSpill
+                <span ref={letterGRef} className="text-white">G</span>eekSpill
               </h1>
             </div>
 
-            <p className="text-lg md:text-lg text-zinc-300 max-w-2xl mx-auto mb-6 font-medium">
-              Your one-stop destination for the latest updates, insights, and breakthroughs from the tech industry.
+            <p className="text-md md:text-md text-zinc-300 max-w-2xl mx-auto mb-6 font-medium">
+              Your central hub for technical blogs from leading tech companies. Stop jumping between different websites - access all technical content in one place.
             </p>
           </div>
         </div>

@@ -27,9 +27,6 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
     --font-inter: 'Inter', sans-serif !important;
   }
-  *, ::before, ::after {
-    border-style: none;
-  }
 }
 ::-webkit-scrollbar {
   @apply w-2.5 h-2.5;
