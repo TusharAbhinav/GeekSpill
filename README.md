@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GeekSpill (v1.0.0-beta)  
 
-## Getting Started
+[![Geek-Spill.png](https://i.postimg.cc/66bX3D5Z/Geek-Spill.png)](https://postimg.cc/BtFy77FZ)  
 
-First, run the development server:
+Hey there, Tech Enthusiast! 👋  
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Welcome to **GeekSpill** – your one-stop solution for staying updated with the latest tech news from companies like Google, Apple, Meta, and more, without the hassle of endless tabs and scrolling.  
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Born out of a personal struggle, GeekSpill is crafted to make tech enthusiasts' lives easier, serving you information fast, fresh, and distraction-free.  
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What's GeekSpill?  
+GeekSpill is not a massive corporate project – it's a solo mission. Built to solve a relatable problem, GeekSpill is for anyone who wants to keep up with tech news without the chaos of navigating multiple websites.  
 
-## Learn More
+With this beta version, we’re just getting started. Features are small but mighty, with lots of room to grow.  
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Features  
+### 1. Latest Articles from Various Tech Companies  
+Get the freshest updates from major players like Google, Apple, Meta, and others – all in one place.  
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. Read Summaries  
+No time to dive deep? GeekSpill offers concise summaries so you can get the gist of each article quickly.  
 
-## Deploy on Vercel
+### 3. Vote on Articles  
+Show your love for articles you find helpful or interesting. Your votes help prioritize popular topics for others.  
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 💻 Tech Stack  
+GeekSpill is powered by the following cutting-edge technologies:  
+- **[Next.js 14](https://nextjs.org/):** A modern React framework for building fast, server-rendered web applications.  
+- **[TanStack Query](https://tanstack.com/query):** Powerful data fetching, caching, and synchronization for a responsive UI.  
+- **[ShadCN UI](https://ui.shadcn.com/):** A library for creating sleek and accessible user interfaces.  
+- **[Redis](https://upstash.com/):** High-performance in-memory data storage for caching and real-time capabilities.  
+- **[Supabase](https://supabase.com/):** A scalable backend solution for authentication, database, and APIs.  
+
+---
+
+## A Personal Thank You 🙌  
+If you’re reading this, you’re not just a user – you’re a part of the journey to solve a problem that’s bugged tech enthusiasts like us for far too long. Your support means everything.  
+
+### Curious about the code?  
+Feel free to check out the GeekSpill repository on GitHub: [GeekSpill on GitHub](https://github.com/TusharAbhinav/GeekSpill).  
+
+---
+
+Stay curious,  
+The Chill Guy 🚀
