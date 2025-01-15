@@ -7,11 +7,9 @@ import { toast } from "@/hooks/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { Mail } from "lucide-react";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 
 const MagicLinkLogin = () => {
-  const [error, setError] = useState<string | null>(null);
-  const [successLogin, setSuccessLogin] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
   const [handleText, setHandleText] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
 
@@ -29,32 +27,47 @@ const MagicLinkLogin = () => {
     return true;
   };
 
+  const sendMagicLink = async (email: string) => {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`,
+      },
+    });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const mutation = useMutation({
+    mutationFn: sendMagicLink,
+    onSuccess: () => {
+      toast({
+        title: "Magic Link has been sent to your mail",
+        description: "Please check your mail for activation link",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      if (error instanceof Error) {
+        return <ErrorHandler error={error.message} />;
+      }
+      return <ErrorHandler error={String(error)} />;
+    },
+  });
+
   const handleLogInWithEmail = async () => {
     if (!validateEmail(handleText)) {
       return;
     }
-
-    try {
-      const supabase = createClient();
-      setLoading(true);
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email: handleText,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`,
-        },
-      });
-      if (error) throw new Error(error.message);
-      else if (data) setSuccessLogin(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
+    mutation.mutate(handleText);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    console.log(value)
     setHandleText(value);
     if (value) {
       validateEmail(value);
@@ -62,17 +75,6 @@ const MagicLinkLogin = () => {
       setEmailError("");
     }
   };
-
-  if (error) {
-    return <ErrorHandler error={error} />;
-  }
-  if (successLogin) {
-    toast({
-      title: "Magic Link has been sent to your mail",
-      description: "Please check your mail for activation link",
-      variant: "default",
-    });
-  }
 
   return (
     <div className="flex flex-col gap-1">
@@ -86,10 +88,10 @@ const MagicLinkLogin = () => {
           value={handleText}
         />
         <Button
-          className="w-min bg-brand  border-[1px] border-white/10 text-white rounded-[12px] hover:bg-brandSecondary"
+          className="w-min bg-brand border-[1px] border-white/10 text-white rounded-[12px] hover:bg-brandSecondary"
           onClick={handleLogInWithEmail}
           type="submit"
-          disabled={loading || !!emailError}
+          disabled={mutation.isPending || !!emailError}
         >
           <Mail />
           Log in with Mail
