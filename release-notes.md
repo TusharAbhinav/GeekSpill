@@ -20,7 +20,7 @@ Right now, our feature list might look small, but it's packed with potential. We
 
 If you're here, you're not just a user – you're part of solving a problem that's bugged me (and probably you) for way too long. Your support means more than a perfectly written function.
 
-Curious about the code or want to take a peek? Check out [GeekSpill on GitHub](#). 
+Curious about the code or want to take a peek? Check out [GeekSpill on GitHub](https://github.com/TusharAbhinav/GeekSpill). 
 
 ---
 
