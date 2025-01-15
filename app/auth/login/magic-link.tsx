@@ -67,7 +67,6 @@ const MagicLinkLogin = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    console.log(value)
     setHandleText(value);
     if (value) {
       validateEmail(value);
