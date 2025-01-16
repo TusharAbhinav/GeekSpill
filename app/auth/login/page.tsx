@@ -203,8 +203,8 @@ const LoginScreen = () => {
             </Badge>
 
             <div className="flex items-center gap-4 mb-4">
-              <GeekSpillLogo className="w-12 h-12 md:w-16 md:h-16 text-white" />
-              <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight">
+              <GeekSpillLogo className="w-16 h-16 md:w-16 md:h-16 text-white" />
+              <h1 className="text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-tight">
                 <span ref={letterGRef} className="text-white">G</span>eekSpill
               </h1>
             </div>
